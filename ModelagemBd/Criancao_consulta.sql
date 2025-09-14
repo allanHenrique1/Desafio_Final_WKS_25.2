@@ -1,3 +1,73 @@
+-- Tabela Cliente
+CREATE TABLE Cliente (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(256),
+    CPF VARCHAR(14) NOT NULL UNIQUE,
+    Email VARCHAR(256),
+    Telefone VARCHAR(14),
+    Data_cadastro DATE
+);
+
+-- Tabela Veiculo
+CREATE TABLE Veiculo (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Modelo VARCHAR(256),
+    Cor VARCHAR(30),
+    Ano_fabricacao INT,
+    Placa VARCHAR(7) UNIQUE,
+    Valor_diaria DECIMAL(10,2),
+    Status ENUM('disponivel','alugado','em manutencao')
+);
+
+-- Tabela Funcionario
+CREATE TABLE Funcionario (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Nome VARCHAR(256),
+    CPF VARCHAR(14) UNIQUE,
+    Email VARCHAR(256),
+    Telefone VARCHAR(14),
+    Cargo VARCHAR(256)
+);
+
+-- Tabela Aluguel
+CREATE TABLE Aluguel (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    ID_Funcionario INT,
+    ID_Veiculo INT,
+    ID_Cliente INT,
+    Data_inicio DATE,
+    Data_fim DATE,
+    Valor_total DECIMAL(10,2),
+    Status ENUM('ativo','finalizado','pendente'),
+    FOREIGN KEY (ID_Funcionario) REFERENCES Funcionario(ID),
+    FOREIGN KEY (ID_Veiculo) REFERENCES Veiculo(ID),
+    FOREIGN KEY (ID_Cliente) REFERENCES Cliente(ID)
+);
+
+-- Tabela Pagamento
+CREATE TABLE Pagamento (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    ID_Aluguel INT,
+    Data DATE,
+    Valor DECIMAL(10,2),
+    Status ENUM('pendente','concluido','cancelado'),
+    Metodo ENUM('cartao','pix','boleto'),
+    FOREIGN KEY (ID_Aluguel) REFERENCES Aluguel(ID)
+);
+
+-- Tabela Manutencao
+CREATE TABLE Manutencao (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    ID_Veiculo INT,
+    ID_Funcionario INT,
+    Descricao_servico VARCHAR(256),
+    Data DATE,
+    Valor DECIMAL(10,2),
+    FOREIGN KEY (ID_Veiculo) REFERENCES Veiculo(ID),
+    FOREIGN KEY (ID_Funcionario) REFERENCES Funcionario(ID)
+);
+
+
 -- Inserir Clientes
 INSERT INTO Cliente (Nome, CPF, Email, Telefone, Data_cadastro) VALUES
 ('Ana Silva', '111.111.111-11', 'ana@email.com', '11999990001', '2023-01-10'),
@@ -82,18 +152,42 @@ SELECT Cargo, COUNT(*) AS qtd_funcionarios
 FROM Funcionario 
 GROUP BY Cargo; 
 
-SELECT YEAR(Data_cadastro) AS ano, COUNT(*) AS qtd_clientes 
-FROM Cliente 
-GROUP BY(Data_cadastro);  
+SELECT YEAR(Data_cadastro) AS ano_cadastro, COUNT(*) AS qtd_clientes
+FROM Cliente
+GROUP BY YEAR(Data_cadastro);
 
-SELECT Status, COUNT(*) AS qtd_veiculos
+SELECT Status, AVG(Valor_diaria) AS media_diaria
 FROM Veiculo
-GROUP BY Status; 
-
-SELECT Status, SUM(Valor_total) AS receita 
-FROM Aluguel 
 GROUP BY Status;
 
+SELECT Cargo, COUNT(*) AS qtd_funcionarios
+FROM Funcionario
+GROUP BY Cargo
+ORDER BY qtd_funcionarios DESC;
 
+SELECT ID_Cliente, SUM(Valor_total) AS receita_cliente
+FROM Aluguel
+GROUP BY ID_Cliente;
 
-  
+SELECT Metodo, SUM(Valor) AS total_pago, COUNT(*) AS qtd_pagamentos
+FROM Pagamento
+GROUP BY Metodo;
+
+SELECT ID_Veiculo, AVG(Valor) AS media_custo, COUNT(*) AS qtd_servicos
+FROM Manutencao
+GROUP BY ID_Veiculo;
+
+SELECT c.Nome AS Cliente,
+       v.Modelo AS Veiculo,
+       a.Data_inicio,
+       a.Data_fim
+FROM Aluguel a
+INNER JOIN Cliente c ON a.ID_Cliente = c.ID
+INNER JOIN Veiculo v ON a.ID_Veiculo = v.ID;
+
+SELECT v.Modelo,
+       v.Placa,
+       a.Data_inicio,
+       a.Data_fim
+FROM Veiculo v
+LEFT JOIN Aluguel a ON v.ID = a.ID_Veiculo;
